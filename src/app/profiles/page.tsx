@@ -14,7 +14,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const generateDummyProfiles = (): Profile[] => {
   const dummyProfiles: Profile[] = [];
-  const countries = ['Ghana', 'USA', 'UK', 'Nigeria', 'Canada']; // Keep other countries for variety if needed
   const occupations = ['Farmer', 'Teacher', 'Engineer', 'Artist', 'Doctor', 'Trader', 'Musician', 'Writer', 'Chef', 'Scientist'];
   const religions = ['Christianity', 'Islam', 'Traditional', 'Spiritual', 'None'];
   
@@ -44,7 +43,7 @@ const generateDummyProfiles = (): Profile[] => {
       education: `Completed ${['Primary School in Accra', 'Middle School in Kumasi', 'Vocational Training in Takoradi', 'University of Ghana, Legon'][i % 4]}`,
       occupation: occupations[i % occupations.length],
       burialInfo: `Laid to rest in ${['their hometown near Cape Coast', 'Accra Public Cemetery', 'the family burial grounds in the Ashanti Region'][i % 3]}.`,
-      country: 'Ghana', // Predominantly Ghana for these names
+      country: 'Ghana', 
       submittedBy: 'dummy-user-id', 
     });
   }
@@ -72,7 +71,7 @@ export default function ProfilesPage() {
       }
       
       setProfiles(loadedProfiles);
-      setFilteredProfiles(loadedProfiles); // Initialize filteredProfiles
+      setFilteredProfiles(loadedProfiles); 
     }
     setIsLoading(false);
   }, []);
@@ -182,4 +181,3 @@ export default function ProfilesPage() {
     </ProtectedRoute>
   );
 }
-
