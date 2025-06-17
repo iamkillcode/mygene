@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useAuth } from '@/contexts/auth-context';
@@ -32,6 +33,8 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
+const NONE_COUNTRY_VALUE = "_NONE_"; // Special value for no country selection
+
 export default function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
@@ -44,7 +47,7 @@ export default function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
-      country: '',
+      country: NONE_COUNTRY_VALUE, // Default to the "None" option
     },
   });
 
@@ -68,7 +71,8 @@ export default function LoginForm() {
   const onSubmit = (data: LoginFormValues) => {
     // Simulate login
     const mockUser = { id: 'user123', email: data.email, name: data.email.split('@')[0] };
-    login(mockUser, data.country);
+    const countryToLogin = data.country === NONE_COUNTRY_VALUE ? undefined : data.country;
+    login(mockUser, countryToLogin);
     toast({
       title: 'Login Successful',
       description: `Welcome back, ${mockUser.name}!`,
@@ -137,7 +141,7 @@ export default function LoginForm() {
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">None (Generic Dashboard)</SelectItem>
+                      <SelectItem value={NONE_COUNTRY_VALUE}>None (Generic Dashboard)</SelectItem>
                       {countries.map(c => (
                         <SelectItem key={c.code} value={c.code}>{c.name}</SelectItem>
                       ))}
@@ -164,3 +168,4 @@ export default function LoginForm() {
     </Card>
   );
 }
+
