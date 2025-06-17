@@ -1,3 +1,4 @@
+
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,15 +14,17 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { CalendarIcon, FileText, Landmark, BookOpen, Briefcase, MapPin, Church, Users, Image as ImageIcon } from 'lucide-react';
+import { CalendarIcon, FileText, Landmark, BookOpen, Briefcase, MapPin, Church, Users, Image as ImageIconLucide, Upload } from 'lucide-react';
 import { submitProfile } from '@/lib/actions';
 import type { Profile } from '@/lib/types';
 import { useAuth } from '@/contexts/auth-context';
 import { useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import Image from 'next/image';
 
 const profileFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  imageUrl: z.string().url({ message: 'Please enter a valid URL.' }).optional().or(z.literal('')),
+  imageUrl: z.string().optional().or(z.literal('')), // Will store Data URL or be empty
   birthDate: z.date({ required_error: 'Date of birth is required.' }),
   deathDate: z.date({ required_error: 'Date of death is required.' }),
   familyDetails: z.string().min(10, { message: 'Family details must be at least 10 characters.' }),
@@ -29,7 +32,7 @@ const profileFormSchema = z.object({
   education: z.string().optional(),
   occupation: z.string().optional(),
   burialInfo: z.string().min(10, { message: 'Burial information must be at least 10 characters.' }),
-  country: z.string().optional(), // Could be pre-filled or selected
+  country: z.string().optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileFormSchema>;
@@ -38,6 +41,8 @@ export default function ProfileForm() {
   const { user } = useAuth();
   const router = useRouter();
   const { toast } = useToast();
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
     defaultValues: {
@@ -52,12 +57,39 @@ export default function ProfileForm() {
     },
   });
 
+  const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        toast({
+          title: "Image too large",
+          description: "Please select an image smaller than 5MB.",
+          variant: "destructive",
+        });
+        setImagePreview(null);
+        form.setValue('imageUrl', '');
+        event.target.value = ''; // Reset file input
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+        form.setValue('imageUrl', reader.result as string, { shouldValidate: true });
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setImagePreview(null);
+      form.setValue('imageUrl', '', { shouldValidate: true });
+    }
+  };
+
   async function onSubmit(data: ProfileFormValues) {
     if (!user) {
       toast({ title: 'Error', description: 'You must be logged in to submit a profile.', variant: 'destructive'});
       return;
     }
 
+    // The imageUrl is already a Data URL string from handleImageChange or empty
     const serverData = {
       ...data,
       birthDate: data.birthDate.toISOString(),
@@ -67,7 +99,6 @@ export default function ProfileForm() {
     const result = await submitProfile(user.id, serverData);
 
     if (result.success && result.profile) {
-      // Save to localStorage (client-side mock)
       const profilesString = localStorage.getItem('mygene-profiles');
       const profiles: Profile[] = profilesString ? JSON.parse(profilesString) : [];
       profiles.push(result.profile);
@@ -84,7 +115,6 @@ export default function ProfileForm() {
         description: result.message || 'Please check the form for errors.',
         variant: 'destructive',
       });
-      // Handle field errors if result.errors exists
     }
   }
 
@@ -107,14 +137,25 @@ export default function ProfileForm() {
               </FormItem>
             )} />
 
-            <FormField control={form.control} name="imageUrl" render={({ field }) => (
-              <FormItem>
-                <FormLabel className="flex items-center gap-1"><ImageIcon size={16}/> Image URL (Optional)</FormLabel>
-                <FormControl><Input placeholder="https://example.com/image.jpg" {...field} /></FormControl>
-                <FormDescription>Link to a publicly accessible image of the deceased.</FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormItem>
+              <FormLabel className="flex items-center gap-1"><ImageIconLucide size={16}/> Profile Image (Optional)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="file" 
+                  accept="image/png, image/jpeg, image/gif, image/webp"
+                  onChange={handleImageChange}
+                  className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+                />
+              </FormControl>
+              <FormDescription>Upload an image of the deceased (max 5MB). PNG, JPG, GIF, WEBP accepted.</FormDescription>
+              {imagePreview && (
+                <div className="mt-4 relative w-40 h-40 rounded-md overflow-hidden border shadow-sm">
+                  <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+                </div>
+              )}
+              {/* This message will appear if schema validation for imageUrl (now Data URL) fails */}
+              <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage> 
+            </FormItem>
             
             <div className="grid md:grid-cols-2 gap-8">
               <FormField control={form.control} name="birthDate" render={({ field }) => (
@@ -216,3 +257,5 @@ export default function ProfileForm() {
     </Card>
   );
 }
+
+    
