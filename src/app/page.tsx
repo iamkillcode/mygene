@@ -1,3 +1,4 @@
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -30,9 +31,9 @@ export default function HomePage() {
         {[
           { icon: <Edit3 className="h-10 w-10 text-accent" />, title: "Create Profiles", description: "Easily submit and manage detailed profiles of deceased family members, capturing their life stories and memories." },
           { icon: <Users className="h-10 w-10 text-accent" />, title: "Share with Family", description: "Securely share profiles with family members, creating a collective digital space for remembrance." },
-          { icon: <Lock className="h-10 w-10 text-accent" />, title: "Unique &amp; Permanent", description: "Each profile receives a unique, anonymized code, ensuring a lasting and accessible legacy." },
+          { icon: <Lock className="h-10 w-10 text-accent" />, title: "Unique & Permanent", description: "Each profile receives a unique, anonymized code, ensuring a lasting and accessible legacy." },
           { icon: <Globe className="h-10 w-10 text-accent" />, title: "Geolocation Aware", description: "Connect with your heritage through country-specific sections, tailored to your location." },
-          { icon: <MessageSquareHeart className="h-10 w-10 text-accent" />, title: "AI Ancestor Q&amp;A", description: "Engage with an AI to ask questions about your ancestors and learn more from their profiles." },
+          { icon: <MessageSquareHeart className="h-10 w-10 text-accent" />, title: "AI Ancestor Q&A", description: "Engage with an AI to ask questions about your ancestors and learn more from their profiles." },
           { icon: <Users className="h-10 w-10 text-accent" />, title: "Community Focused", description: "Connect with others sharing and preserving their family histories in a respectful environment." },
         ].map(feature => (
           <Card key={feature.title} className="text-left shadow-lg hover:shadow-xl transition-shadow duration-300">

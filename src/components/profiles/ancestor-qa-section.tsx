@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Profile } from '@/lib/types';
@@ -67,7 +68,7 @@ export default function AncestorQASection({ profile }: AncestorQASectionProps) {
     <Card className="shadow-lg mt-8 bg-gradient-to-br from-primary/5 via-background to-background no-print">
       <CardHeader>
         <CardTitle className="text-2xl font-headline text-primary flex items-center gap-2">
-          <Sparkles size={24} className="text-accent" /> AI-Powered Ancestor Q&amp;A
+          <Sparkles size={24} className="text-accent" /> AI-Powered Ancestor Q&A
         </CardTitle>
         <CardDescription>
           Ask questions about {profile.name} and get AI-generated answers based on their profile.
