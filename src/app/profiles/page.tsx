@@ -1,3 +1,4 @@
+
 'use client';
 
 import ProfileCard from '@/components/profiles/profile-card';
@@ -11,6 +12,35 @@ import Link from 'next/link';
 import { PlusSquare, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
+const generateDummyProfiles = (): Profile[] => {
+  const dummyProfiles: Profile[] = [];
+  const countries = ['Ghana', 'USA', 'UK', 'Nigeria', 'Canada'];
+  const occupations = ['Farmer', 'Teacher', 'Engineer', 'Artist', 'Doctor', 'Trader', 'Musician', 'Writer', 'Chef', 'Scientist'];
+  const religions = ['Christianity', 'Islam', 'Traditional', 'Spiritual', 'None'];
+
+  for (let i = 1; i <= 10; i++) {
+    const birthYear = 1900 + Math.floor(Math.random() * 70); // 1900-1969
+    const deathYear = birthYear + 50 + Math.floor(Math.random() * 40); // 50-90 years lifespan
+
+    dummyProfiles.push({
+      id: `dummy-${i}-${Date.now()}`, // Ensure unique enough for testing
+      name: `Ancestor ${i} ${String.fromCharCode(65 + (i % 26))}`, // E.g., Ancestor 1 A
+      imageUrl: `https://placehold.co/400x300.png?text=Ancestor%20${i}`,
+      birthDate: new Date(birthYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
+      deathDate: new Date(deathYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
+      familyDetails: `Ancestor ${i} was part of a large and loving family. Survived by many children and grandchildren. Known for their wisdom and kindness.`,
+      religion: religions[i % religions.length],
+      education: `Completed ${['Primary School', 'High School', 'Vocational Training', 'University Degree'][i % 4]}`,
+      occupation: occupations[i % occupations.length],
+      burialInfo: `Buried in the family plot at ${['Hometown Cemetery', 'City Memorial Park', 'Village Grounds'][i % 3]} with full honors.`,
+      country: countries[i % countries.length],
+      submittedBy: 'dummy-user-id', // Generic ID for seeded data
+    });
+  }
+  return dummyProfiles;
+};
+
+
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
@@ -22,7 +52,14 @@ export default function ProfilesPage() {
     setIsLoading(true);
     if (typeof window !== 'undefined') {
       const storedProfiles = localStorage.getItem('mygene-profiles');
-      const loadedProfiles = storedProfiles ? JSON.parse(storedProfiles) : [];
+      let loadedProfiles = storedProfiles ? JSON.parse(storedProfiles) : [];
+      
+      if (loadedProfiles.length === 0) {
+        console.log('No profiles found in localStorage, generating dummy data...');
+        loadedProfiles = generateDummyProfiles();
+        localStorage.setItem('mygene-profiles', JSON.stringify(loadedProfiles));
+      }
+      
       setProfiles(loadedProfiles);
       setFilteredProfiles(loadedProfiles); // Initialize filteredProfiles
     }
