@@ -14,27 +14,38 @@ import { Skeleton } from '@/components/ui/skeleton';
 
 const generateDummyProfiles = (): Profile[] => {
   const dummyProfiles: Profile[] = [];
-  const countries = ['Ghana', 'USA', 'UK', 'Nigeria', 'Canada'];
+  const countries = ['Ghana', 'USA', 'UK', 'Nigeria', 'Canada']; // Keep other countries for variety if needed
   const occupations = ['Farmer', 'Teacher', 'Engineer', 'Artist', 'Doctor', 'Trader', 'Musician', 'Writer', 'Chef', 'Scientist'];
   const religions = ['Christianity', 'Islam', 'Traditional', 'Spiritual', 'None'];
+  
+  const ghanaianFirstNamesMale = ['Kwame', 'Kofi', 'Kwabena', 'Kwadwo', 'Yaw', 'Kweku', 'Akwasi', 'Kwasi'];
+  const ghanaianFirstNamesFemale = ['Ama', 'Akosua', 'Adwoa', 'Abena', 'Akua', 'Yaa', 'Afua', 'Esi'];
+  const ghanaianLastNames = ['Nkrumah', 'Mensah', 'Agyeman', 'Osei', 'Boateng', 'Asamoah', 'Koomson', 'Adu', 'Yeboah', 'Acquah'];
 
   for (let i = 1; i <= 10; i++) {
     const birthYear = 1900 + Math.floor(Math.random() * 70); // 1900-1969
     const deathYear = birthYear + 50 + Math.floor(Math.random() * 40); // 50-90 years lifespan
+    
+    const isMale = Math.random() < 0.5;
+    const firstName = isMale 
+      ? ghanaianFirstNamesMale[Math.floor(Math.random() * ghanaianFirstNamesMale.length)]
+      : ghanaianFirstNamesFemale[Math.floor(Math.random() * ghanaianFirstNamesFemale.length)];
+    const lastName = ghanaianLastNames[Math.floor(Math.random() * ghanaianLastNames.length)];
+    const fullName = `${firstName} ${lastName}`;
 
     dummyProfiles.push({
-      id: `dummy-${i}-${Date.now()}`, // Ensure unique enough for testing
-      name: `Ancestor ${i} ${String.fromCharCode(65 + (i % 26))}`, // E.g., Ancestor 1 A
-      imageUrl: `https://placehold.co/400x300.png?text=Ancestor%20${i}`,
+      id: `dummy-gh-${i}-${Date.now()}`, 
+      name: fullName,
+      imageUrl: `https://placehold.co/400x300.png?text=${encodeURIComponent(firstName.substring(0,1)+lastName.substring(0,1))}`,
       birthDate: new Date(birthYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
       deathDate: new Date(deathYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-      familyDetails: `Ancestor ${i} was part of a large and loving family. Survived by many children and grandchildren. Known for their wisdom and kindness.`,
+      familyDetails: `${fullName} was a respected member of the community in their village in Ghana. Known for their generosity and storytelling.`,
       religion: religions[i % religions.length],
-      education: `Completed ${['Primary School', 'High School', 'Vocational Training', 'University Degree'][i % 4]}`,
+      education: `Completed ${['Primary School in Accra', 'Middle School in Kumasi', 'Vocational Training in Takoradi', 'University of Ghana, Legon'][i % 4]}`,
       occupation: occupations[i % occupations.length],
-      burialInfo: `Buried in the family plot at ${['Hometown Cemetery', 'City Memorial Park', 'Village Grounds'][i % 3]} with full honors.`,
-      country: countries[i % countries.length],
-      submittedBy: 'dummy-user-id', // Generic ID for seeded data
+      burialInfo: `Laid to rest in ${['their hometown near Cape Coast', 'Accra Public Cemetery', 'the family burial grounds in the Ashanti Region'][i % 3]}.`,
+      country: 'Ghana', // Predominantly Ghana for these names
+      submittedBy: 'dummy-user-id', 
     });
   }
   return dummyProfiles;
@@ -55,7 +66,7 @@ export default function ProfilesPage() {
       let loadedProfiles = storedProfiles ? JSON.parse(storedProfiles) : [];
       
       if (loadedProfiles.length === 0) {
-        console.log('No profiles found in localStorage, generating dummy data...');
+        console.log('No profiles found in localStorage, generating dummy data with Ghanaian names...');
         loadedProfiles = generateDummyProfiles();
         localStorage.setItem('mygene-profiles', JSON.stringify(loadedProfiles));
       }
@@ -171,3 +182,4 @@ export default function ProfilesPage() {
     </ProtectedRoute>
   );
 }
+
