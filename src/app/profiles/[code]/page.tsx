@@ -120,18 +120,13 @@ export default function ProfileDetailPage() {
                 <Button variant="outline" onClick={handlePrint} aria-label="Print profile">
                   <Printer size={18} className="mr-2"/> Print
                 </Button>
-                {/* Add Share button functionality later */}
-                {/* <Button variant="outline" aria-label="Share profile">
-                  <Share2 size={18} className="mr-2"/> Share
-                </Button> */}
                  {canEditOrDelete && (
                   <>
-                    {/* Edit functionality would require navigating to ProfileForm with pre-filled data, not implemented here */}
-                    {/* <Link href={`/submit-profile?edit=${profile.id}`} passHref>
+                    <Link href={`/submit-profile?edit=${profile.id}`} passHref>
                       <Button variant="outline" aria-label="Edit profile">
                         <Edit size={18} className="mr-2" /> Edit
                       </Button>
-                    </Link> */}
+                    </Link>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="destructive" aria-label="Delete profile">

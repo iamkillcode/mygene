@@ -18,13 +18,15 @@ import { CalendarIcon, FileText, Landmark, BookOpen, Briefcase, MapPin, Church, 
 import { submitProfile } from '@/lib/actions';
 import type { Profile } from '@/lib/types';
 import { useAuth } from '@/contexts/auth-context';
-import { useRouter } from 'next/navigation';
-import React, { useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { Skeleton } from '../ui/skeleton';
 
 const profileFormSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
-  imageUrl: z.string().optional().or(z.literal('')), // Will store Data URL or be empty
+  imageUrl: z.string().optional().or(z.literal('')),
   birthDate: z.date({ required_error: 'Date of birth is required.' }),
   deathDate: z.date({ required_error: 'Date of death is required.' }),
   familyDetails: z.string().min(10, { message: 'Family details must be at least 10 characters.' }),
@@ -40,8 +42,13 @@ type ProfileFormValues = z.infer<typeof profileFormSchema>;
 export default function ProfileForm() {
   const { user } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isLoadingForm, setIsLoadingForm] = useState(true);
+
+  const editProfileId = searchParams.get('edit');
 
   const form = useForm<ProfileFormValues>({
     resolver: zodResolver(profileFormSchema),
@@ -56,6 +63,31 @@ export default function ProfileForm() {
       country: '',
     },
   });
+
+  useEffect(() => {
+    const profileId = searchParams.get('edit');
+    if (profileId) {
+      setIsEditMode(true);
+      setIsLoadingForm(true);
+      const storedProfiles = localStorage.getItem('mygene-profiles');
+      if (storedProfiles) {
+        const profiles: Profile[] = JSON.parse(storedProfiles);
+        const profileToEdit = profiles.find(p => p.id === profileId);
+        if (profileToEdit) {
+          form.reset({
+            ...profileToEdit,
+            birthDate: new Date(profileToEdit.birthDate),
+            deathDate: new Date(profileToEdit.deathDate),
+          });
+          if (profileToEdit.imageUrl) {
+            setImagePreview(profileToEdit.imageUrl);
+          }
+        }
+      }
+    }
+    setIsLoadingForm(false);
+  }, [searchParams, form]);
+
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -89,11 +121,11 @@ export default function ProfileForm() {
       return;
     }
 
-    // The imageUrl is already a Data URL string from handleImageChange or empty
     const serverData = {
       ...data,
       birthDate: data.birthDate.toISOString(),
       deathDate: data.deathDate.toISOString(),
+      id: isEditMode ? editProfileId ?? undefined : undefined,
     };
     
     const result = await submitProfile(user.id, serverData);
@@ -101,12 +133,21 @@ export default function ProfileForm() {
     if (result.success && result.profile) {
       const profilesString = localStorage.getItem('mygene-profiles');
       const profiles: Profile[] = profilesString ? JSON.parse(profilesString) : [];
-      profiles.push(result.profile);
+      
+      if (isEditMode) {
+        const index = profiles.findIndex(p => p.id === result.profile.id);
+        if (index !== -1) {
+          profiles[index] = result.profile;
+        }
+      } else {
+        profiles.push(result.profile);
+      }
+
       localStorage.setItem('mygene-profiles', JSON.stringify(profiles));
 
       toast({
-        title: 'Profile Submitted',
-        description: `${result.profile.name}'s profile has been successfully created with ID: ${result.profile.id}`,
+        title: isEditMode ? 'Profile Updated' : 'Profile Submitted',
+        description: `${result.profile.name}'s profile has been successfully ${isEditMode ? 'updated' : 'created'}.`,
       });
       router.push(`/profiles/${result.profile.id}`);
     } else {
@@ -117,14 +158,33 @@ export default function ProfileForm() {
       });
     }
   }
+  
+  if (isLoadingForm) {
+      return (
+          <Card className="w-full max-w-2xl mx-auto shadow-xl">
+              <CardHeader>
+                  <Skeleton className="h-8 w-3/4" />
+                   <Skeleton className="h-4 w-full" />
+              </CardHeader>
+              <CardContent className="space-y-8">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-20 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+              </CardContent>
+          </Card>
+      );
+  }
 
   return (
     <Card className="w-full max-w-2xl mx-auto shadow-xl">
       <CardHeader>
         <CardTitle className="text-3xl font-headline text-primary flex items-center gap-2">
-          <FileText size={28}/> Submit Deceased Profile
+          <FileText size={28}/> {isEditMode ? 'Edit Profile' : 'Submit Deceased Profile'}
         </CardTitle>
-        <CardDescription>Fill in the details to create a memorial profile. All fields marked with * are required.</CardDescription>
+        <CardDescription>
+          {isEditMode ? `You are editing the profile for ${form.getValues('name')}.` : 'Fill in the details to create a memorial profile.'} All fields marked with * are required.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <Form {...form}>
@@ -171,7 +231,16 @@ export default function ProfileForm() {
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("1700-01-01")} initialFocus />
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date() || date < new Date("1800-01-01")}
+                        initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={1800}
+                        toYear={new Date().getFullYear()}
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -191,7 +260,16 @@ export default function ProfileForm() {
                       </FormControl>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar mode="single" selected={field.value} onSelect={field.onChange} disabled={(date) => date > new Date() || date < new Date("1700-01-01") || (form.getValues("birthDate") && date < form.getValues("birthDate"))} initialFocus />
+                      <Calendar
+                        mode="single"
+                        selected={field.value}
+                        onSelect={field.onChange}
+                        disabled={(date) => date > new Date() || date < new Date("1800-01-01") || (form.getValues("birthDate") && date < form.getValues("birthDate"))}
+                        initialFocus
+                        captionLayout="dropdown-buttons"
+                        fromYear={1800}
+                        toYear={new Date().getFullYear()}
+                      />
                     </PopoverContent>
                   </Popover>
                   <FormMessage />
@@ -249,7 +327,7 @@ export default function ProfileForm() {
             )} />
 
             <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground" disabled={form.formState.isSubmitting}>
-              {form.formState.isSubmitting ? 'Submitting...' : 'Submit Profile'}
+              {form.formState.isSubmitting ? 'Submitting...' : isEditMode ? 'Update Profile' : 'Submit Profile'}
             </Button>
           </form>
         </Form>
@@ -257,5 +335,3 @@ export default function ProfileForm() {
     </Card>
   );
 }
-
-    
