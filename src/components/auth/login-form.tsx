@@ -4,7 +4,6 @@
 import { useAuth } from '@/contexts/auth-context';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -13,16 +12,16 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, LogIn } from 'lucide-react';
-import React, { useState, useEffect } from 'react';
-import { Label } from '../ui/label';
+import React, { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 const countries = [
   { code: 'GH', name: 'Ghana' },
   { code: 'US', name: 'United States' },
   { code: 'GB', name: 'United Kingdom' },
   { code: 'NG', name: 'Nigeria' },
-  // Add more countries as needed
 ];
 
 const loginSchema = z.object({
@@ -33,50 +32,57 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const NONE_COUNTRY_VALUE = "_NONE_"; // Special value for no country selection
+const NONE_COUNTRY_VALUE = "_NONE_";
 
 export default function LoginForm() {
   const { login } = useAuth();
-  const router = useRouter();
   const { toast } = useToast();
   const [showPassword, setShowPassword] = useState(false);
-  const [detectedCountry, setDetectedCountry] = useState<string | undefined>(undefined);
 
   const form = useForm<LoginFormValues>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
       email: '',
       password: '',
-      country: NONE_COUNTRY_VALUE, // Default to the "None" option
+      country: NONE_COUNTRY_VALUE,
     },
   });
 
-  useEffect(() => {
-    // Simulate geolocation detection - in a real app, use navigator.geolocation
-    // For this demo, let's randomly pick one or allow user to select
-    // Or try to get it from browser's locale if possible, or a GeoIP API (server-side)
-    // For simplicity, we'll just allow user selection.
-    // If you want to pre-fill based on some heuristic:
-    // const guessCountry = () => { /* ... */ setDetectedCountry('GH'); };
-    // guessCountry();
-  }, []);
+  const onSubmit = async (data: LoginFormValues) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(auth, data.email, data.password);
+      const user = userCredential.user;
+      
+      toast({
+        title: 'Login Successful',
+        description: `Welcome back, ${user.displayName || user.email}!`,
+      });
+      
+      const countryToLogin = data.country === NONE_COUNTRY_VALUE ? undefined : data.country;
+      login(countryToLogin);
 
-  useEffect(() => {
-    if (detectedCountry) {
-      form.setValue('country', detectedCountry);
+    } catch (error: any) {
+      console.error("Login error:", error);
+      let errorMessage = "An unknown error occurred during login.";
+      switch (error.code) {
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          errorMessage = 'Invalid email or password. Please try again.';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Please enter a valid email address.';
+          break;
+        default:
+          errorMessage = 'Failed to log in. Please try again later.';
+          break;
+      }
+      toast({
+        variant: 'destructive',
+        title: 'Login Failed',
+        description: errorMessage,
+      });
     }
-  }, [detectedCountry, form]);
-
-
-  const onSubmit = (data: LoginFormValues) => {
-    // Simulate login
-    const mockUser = { id: 'user123', email: data.email, name: data.email.split('@')[0] };
-    const countryToLogin = data.country === NONE_COUNTRY_VALUE ? undefined : data.country;
-    login(mockUser, countryToLogin);
-    toast({
-      title: 'Login Successful',
-      description: `Welcome back, ${mockUser.name}!`,
-    });
   };
 
   return (
@@ -168,4 +174,3 @@ export default function LoginForm() {
     </Card>
   );
 }
-

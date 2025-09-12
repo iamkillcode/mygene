@@ -1,15 +1,16 @@
+
 'use client';
 
 import ProtectedRoute from '@/components/layout/protected-route';
 import type { Profile } from '@/lib/types';
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notFound, useParams } from 'next/navigation';
 import { format } from 'date-fns';
-import { CalendarDays, Users, Church, BookOpen, Briefcase, Landmark, MapPin, Printer, Edit, Trash2, Home, Share2 } from 'lucide-react';
+import { CalendarDays, Users, Church, BookOpen, Briefcase, Landmark, MapPin, Printer, Edit, Trash2, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useToast } from '@/hooks/use-toast';
 import AncestorQASection from '@/components/profiles/ancestor-qa-section';
@@ -24,8 +25,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-
+} from "@/components/ui/alert-dialog";
+import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 export default function ProfileDetailPage() {
   const params = useParams();
@@ -37,45 +39,46 @@ export default function ProfileDetailPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (code && typeof code === 'string') {
-      setIsLoading(true);
-      if (typeof window !== 'undefined') {
-        const storedProfiles = localStorage.getItem('mygene-profiles');
-        if (storedProfiles) {
-          const profiles: Profile[] = JSON.parse(storedProfiles);
-          const foundProfile = profiles.find(p => p.id === code);
-          setProfile(foundProfile || null);
+    const fetchProfile = async () => {
+      if (code && typeof code === 'string') {
+        setIsLoading(true);
+        try {
+          const docRef = doc(db, 'profiles', code);
+          const docSnap = await getDoc(docRef);
+          if (docSnap.exists()) {
+            setProfile({ id: docSnap.id, ...docSnap.data() } as Profile);
+          } else {
+            setProfile(null);
+          }
+        } catch (error) {
+          console.error("Error fetching profile:", error);
+          toast({ variant: "destructive", title: "Error", description: "Could not fetch profile." });
+          setProfile(null);
         }
+        setIsLoading(false);
       }
-      setIsLoading(false);
-    }
-  }, [code]);
+    };
+    fetchProfile();
+  }, [code, toast]);
 
   const handlePrint = () => {
     window.print();
   };
 
-  const handleDeleteProfile = () => {
+  const handleDeleteProfile = async () => {
     if (!profile || !user || user.id !== profile.submittedBy) return;
 
     setIsDeleting(true);
-    // Simulate deletion from localStorage
-    const profilesString = localStorage.getItem('mygene-profiles');
-    if (profilesString) {
-      let profiles: Profile[] = JSON.parse(profilesString);
-      profiles = profiles.filter(p => p.id !== profile.id);
-      localStorage.setItem('mygene-profiles', JSON.stringify(profiles));
+    try {
+      await deleteDoc(doc(db, 'profiles', profile.id));
       toast({ title: "Profile Deleted", description: `${profile.name}'s profile has been removed.` });
-      // Redirect to profiles list or dashboard
-      // For now, user will need to navigate manually or we can use router.push after a delay.
-      // To keep it simple, we'll let user navigate. The profile will disappear from lists.
-      // To fully remove from current view, we'd setProfile(null) but that leads to notFound.
-      // Better to redirect:
-      window.location.href = '/profiles'; 
+      window.location.href = '/profiles';
+    } catch (error) {
+      console.error("Error deleting profile:", error);
+      toast({ variant: "destructive", title: "Deletion Failed", description: "Could not delete the profile." });
+      setIsDeleting(false);
     }
-    setIsDeleting(false);
   };
-
 
   if (isLoading) {
     return (
@@ -188,7 +191,7 @@ export default function ProfileDetailPage() {
               {profile.occupation && (
                 <ProfileSection icon={<Briefcase className="text-accent"/>} title="Occupation">
                   <p className="whitespace-pre-wrap">{profile.occupation}</p>
-                </ProfileSection>
+                </Section>
               )}
             </div>
           </CardContent>

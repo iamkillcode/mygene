@@ -1,3 +1,4 @@
+
 'use client';
 
 import ProtectedRoute from '@/components/layout/protected-route';
@@ -8,21 +9,36 @@ import { Button } from '@/components/ui/button';
 import { PlusSquare, Users, BarChart3, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Profile } from '@/lib/types';
+import { collection, query, where, getDocs, count } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function DashboardPage() {
   const { user } = useAuth();
   const [profileCount, setProfileCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
+
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && user) {
-      const storedProfiles = localStorage.getItem('mygene-profiles');
-      if (storedProfiles) {
-        const profiles: Profile[] = JSON.parse(storedProfiles);
-        const userProfiles = profiles.filter(p => p.submittedBy === user.id);
-        setProfileCount(userProfiles.length);
+    const fetchProfileCount = async () => {
+      if (user) {
+        try {
+            const profilesCollection = collection(db, 'profiles');
+            const q = query(profilesCollection, where("submittedBy", "==", user.id));
+            const querySnapshot = await getDocs(q);
+            setProfileCount(querySnapshot.size);
+        } catch(error) {
+            console.error("Error fetching profile count: ", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load profile count.'})
+        } finally {
+            setIsLoading(false);
+        }
       }
-    }
-  }, [user]);
+    };
+
+    fetchProfileCount();
+  }, [user, toast]);
 
   return (
     <ProtectedRoute>
@@ -33,7 +49,11 @@ export default function DashboardPage() {
             <CardDescription>This is your MyGene dashboard. Manage your profiles and explore your family history.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p>You have submitted <span className="font-bold text-primary">{profileCount}</span> profile(s).</p>
+            {isLoading ? (
+                <p>Loading profile count...</p>
+            ) : (
+                <p>You have submitted <span className="font-bold text-primary">{profileCount}</span> profile(s).</p>
+            )}
             {user?.countryPreference && (
                <p className="flex items-center gap-2 text-muted-foreground">
                 <MapPin size={18} /> You are viewing the MyGene {user.countryPreference} section.
@@ -51,8 +71,8 @@ export default function DashboardPage() {
           />
           <DashboardActionCard
             title="View My Profiles"
-            description="Browse and manage the profiles you've submitted."
-            href="/profiles" // This will show all, could be filtered to user's later
+            description="Browse and manage all submitted profiles."
+            href="/profiles"
             icon={<Users className="h-8 w-8 text-primary" />}
           />
           <DashboardActionCard
@@ -72,7 +92,7 @@ export default function DashboardPage() {
             <ul className="list-disc list-inside space-y-2 text-muted-foreground">
               <li>Ensure all information is accurate before submitting.</li>
               <li>Use high-quality images for better profile presentation.</li>
-              <li>Regularly backup any important information you gather.</li>
+              <li>Your data is now securely stored in our database.</li>
             </ul>
           </CardContent>
         </Card>
@@ -113,4 +133,3 @@ function DashboardActionCard({ title, description, href, icon, disabled }: Dashb
 
   return <Link href={href} className="focus:outline-none focus:ring-2 focus:ring-primary rounded-lg">{content}</Link>;
 }
-

@@ -2,9 +2,10 @@
 'use server';
 
 import { z } from 'zod';
-import { generateUniqueCode } from '@/ai/flows/generate-unique-code';
 import type { Profile } from './types';
 import { ancestorQAndA } from '@/ai/flows/ai-powered-ancestor-q-and-a';
+import { db } from './firebase';
+import { collection, addDoc, doc, setDoc } from 'firebase/firestore';
 
 const profileSchema = z.object({
   id: z.string().optional(),
@@ -26,35 +27,33 @@ export async function submitProfile(userId: string, values: z.infer<typeof profi
     const { id, ...profileData } = validatedData;
     const isUpdate = !!id;
 
-    let profileId = id;
-
-    if (!isUpdate) {
-      // Generate a new unique code only for new profiles
-      const profileDataString = `Name: ${profileData.name}, Birth: ${profileData.birthDate}, Death: ${profileData.deathDate}`;
-      const { uniqueCode } = await generateUniqueCode({ profileData: profileDataString });
-      profileId = uniqueCode;
-    }
-
-    if (!profileId) {
-       throw new Error("Profile ID is missing for an update.");
-    }
-
-    const finalProfile: Profile = {
+    const finalProfileData: Omit<Profile, 'id'> = {
       ...profileData,
-      id: profileId,
       submittedBy: userId,
     };
     
-    // In a real app, save finalProfile to a database here.
-    console.log(`Profile ${isUpdate ? 'updated' : 'submitted'} (server action):`, finalProfile);
+    let profileId: string;
 
-    return { success: true, profile: finalProfile };
+    if (isUpdate && id) {
+      // Update existing document
+      const profileRef = doc(db, 'profiles', id);
+      await setDoc(profileRef, finalProfileData, { merge: true });
+      profileId = id;
+      console.log('Profile updated in Firestore with ID:', profileId);
+    } else {
+      // Add new document
+      const docRef = await addDoc(collection(db, 'profiles'), finalProfileData);
+      profileId = docRef.id;
+      console.log('Profile added to Firestore with ID:', profileId);
+    }
+
+    return { success: true, profileId: profileId };
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error('Zod validation error during profile submission:', error.flatten().fieldErrors);
       return { success: false, errors: error.flatten().fieldErrors, message: 'Validation failed. Please check the form.' };
     }
-    console.error('Error submitting profile:', error);
+    console.error('Error submitting profile to Firestore:', error);
     return { success: false, message: 'An unexpected error occurred.' };
   }
 }

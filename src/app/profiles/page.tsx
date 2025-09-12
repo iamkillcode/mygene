@@ -11,70 +11,43 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { PlusSquare, Search } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const generateDummyProfiles = (): Profile[] => {
-  const dummyProfiles: Profile[] = [];
-  const occupations = ['Farmer', 'Teacher', 'Engineer', 'Artist', 'Doctor', 'Trader', 'Musician', 'Writer', 'Chef', 'Scientist'];
-  const religions = ['Christianity', 'Islam', 'Traditional', 'Spiritual', 'None'];
-  
-  const ghanaianFirstNamesMale = ['Kwame', 'Kofi', 'Kwabena', 'Kwadwo', 'Yaw', 'Kweku', 'Akwasi', 'Kwasi'];
-  const ghanaianFirstNamesFemale = ['Ama', 'Akosua', 'Adwoa', 'Abena', 'Akua', 'Yaa', 'Afua', 'Esi'];
-  const ghanaianLastNames = ['Nkrumah', 'Mensah', 'Agyeman', 'Osei', 'Boateng', 'Asamoah', 'Koomson', 'Adu', 'Yeboah', 'Acquah'];
-
-  for (let i = 1; i <= 10; i++) {
-    const birthYear = 1900 + Math.floor(Math.random() * 70); // 1900-1969
-    const deathYear = birthYear + 50 + Math.floor(Math.random() * 40); // 50-90 years lifespan
-    
-    const isMale = Math.random() < 0.5;
-    const firstName = isMale 
-      ? ghanaianFirstNamesMale[Math.floor(Math.random() * ghanaianFirstNamesMale.length)]
-      : ghanaianFirstNamesFemale[Math.floor(Math.random() * ghanaianFirstNamesFemale.length)];
-    const lastName = ghanaianLastNames[Math.floor(Math.random() * ghanaianLastNames.length)];
-    const fullName = `${firstName} ${lastName}`;
-
-    dummyProfiles.push({
-      id: `dummy-gh-${i}-${Date.now()}`, 
-      name: fullName,
-      imageUrl: `https://placehold.co/400x300.png?text=${encodeURIComponent(firstName.substring(0,1)+lastName.substring(0,1))}`,
-      birthDate: new Date(birthYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-      deathDate: new Date(deathYear, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28) + 1).toISOString(),
-      familyDetails: `${fullName} was a respected member of the community in their village in Ghana. Known for their generosity and storytelling.`,
-      religion: religions[i % religions.length],
-      education: `Completed ${['Primary School in Accra', 'Middle School in Kumasi', 'Vocational Training in Takoradi', 'University of Ghana, Legon'][i % 4]}`,
-      occupation: occupations[i % occupations.length],
-      burialInfo: `Laid to rest in ${['their hometown near Cape Coast', 'Accra Public Cemetery', 'the family burial grounds in the Ashanti Region'][i % 3]}.`,
-      country: 'Ghana', 
-      submittedBy: 'dummy-user-id', 
-    });
-  }
-  return dummyProfiles;
-};
-
+import { collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { useToast } from '@/hooks/use-toast';
 
 export default function ProfilesPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [filteredProfiles, setFilteredProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [sortOrder, setSortOrder] = useState<'name-asc' | 'name-desc' | 'death-asc' | 'death-desc'>('name-asc');
+  const [sortOrder, setSortOrder] = useState<'name-asc' | 'name-desc' | 'death-desc' | 'death-asc'>('name-asc');
   const [isLoading, setIsLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
-    setIsLoading(true);
-    if (typeof window !== 'undefined') {
-      const storedProfiles = localStorage.getItem('mygene-profiles');
-      let loadedProfiles = storedProfiles ? JSON.parse(storedProfiles) : [];
-      
-      if (loadedProfiles.length === 0) {
-        console.log('No profiles found in localStorage, generating dummy data with Ghanaian names...');
-        loadedProfiles = generateDummyProfiles();
-        localStorage.setItem('mygene-profiles', JSON.stringify(loadedProfiles));
+    const fetchProfiles = async () => {
+      setIsLoading(true);
+      try {
+        const profilesCollection = collection(db, 'profiles');
+        const q = query(profilesCollection); // We'll sort client-side for now
+        const querySnapshot = await getDocs(q);
+        const loadedProfiles: Profile[] = [];
+        querySnapshot.forEach((doc) => {
+          loadedProfiles.push({ id: doc.id, ...doc.data() } as Profile);
+        });
+        setProfiles(loadedProfiles);
+        setFilteredProfiles(loadedProfiles);
+      } catch (error) {
+        console.error("Error fetching profiles: ", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not fetch profiles from the database."
+        });
       }
-      
-      setProfiles(loadedProfiles);
-      setFilteredProfiles(loadedProfiles); 
-    }
-    setIsLoading(false);
-  }, []);
+      setIsLoading(false);
+    };
+    fetchProfiles();
+  }, [toast]);
 
   useEffect(() => {
     let tempProfiles = [...profiles];
@@ -102,7 +75,6 @@ export default function ProfilesPage() {
     setFilteredProfiles(tempProfiles);
   }, [searchTerm, sortOrder, profiles]);
 
-
   if (isLoading) {
     return (
       <ProtectedRoute>
@@ -118,7 +90,6 @@ export default function ProfilesPage() {
       </ProtectedRoute>
     );
   }
-
 
   return (
     <ProtectedRoute>
@@ -151,8 +122,8 @@ export default function ProfilesPage() {
               <SelectContent>
                 <SelectItem value="name-asc">Name (A-Z)</SelectItem>
                 <SelectItem value="name-desc">Name (Z-A)</SelectItem>
-                <SelectItem value="death-asc">Date of Death (Oldest)</SelectItem>
                 <SelectItem value="death-desc">Date of Death (Newest)</SelectItem>
+                <SelectItem value="death-asc">Date of Death (Oldest)</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -167,14 +138,9 @@ export default function ProfilesPage() {
         ) : (
           <div className="text-center py-12">
             <p className="text-xl text-muted-foreground">No profiles found.</p>
-            {profiles.length > 0 && searchTerm && (
-              <p className="text-md text-muted-foreground mt-2">Try adjusting your search or filter criteria.</p>
-            )}
-            {profiles.length === 0 && (
-              <p className="text-md text-muted-foreground mt-2">
-                Why not be the first to <Link href="/submit-profile" className="text-primary hover:underline">add one</Link>?
-              </p>
-            )}
+            <p className="text-md text-muted-foreground mt-2">
+              Why not be the first to <Link href="/submit-profile" className="text-primary hover:underline">add one</Link>?
+            </p>
           </div>
         )}
       </div>

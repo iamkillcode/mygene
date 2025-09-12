@@ -1,14 +1,17 @@
+
 'use client';
 
 import type { User } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { onAuthStateChanged, signOut, type User as FirebaseUser } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
 
 interface AuthContextType {
   user: User | null;
-  setUser: Dispatch<SetStateAction<User | null>>;
-  login: (userData: User, country?: string) => void;
+  firebaseUser: FirebaseUser | null;
+  login: (country?: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -17,42 +20,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [firebaseUser, setFirebaseUser] = useState<FirebaseUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    try {
-      const storedUser = localStorage.getItem('mygene-user');
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      if (currentUser) {
+        setFirebaseUser(currentUser);
+        setUser({
+          id: currentUser.uid,
+          email: currentUser.email!,
+          name: currentUser.displayName,
+        });
+      } else {
+        setFirebaseUser(null);
+        setUser(null);
       }
-    } catch (error) {
-      console.error("Failed to parse user from localStorage", error);
-      localStorage.removeItem('mygene-user');
-    }
-    setIsLoading(false);
-  }, []);
+      setIsLoading(false);
+    });
 
-  const login = (userData: User, country?: string) => {
-    localStorage.setItem('mygene-user', JSON.stringify(userData));
-    setUser(userData);
+    return () => unsubscribe();
+  }, []);
+  
+  const login = (country?: string) => {
     if (country) {
-      // Example: redirect to /gh/dashboard based on country
-      // This logic can be expanded.
       router.push(`/${country.toLowerCase()}/dashboard`);
     } else {
       router.push('/dashboard');
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('mygene-user');
-    setUser(null);
+  const logout = async () => {
+    await signOut(auth);
     router.push('/login');
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, login, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, firebaseUser, login, logout, isLoading }}>
       {children}
     </AuthContext.Provider>
   );

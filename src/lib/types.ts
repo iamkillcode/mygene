@@ -1,6 +1,6 @@
 
 export interface Profile {
-  id: string; // Unique code
+  id: string; // Unique code (Firestore document ID)
   imageUrl?: string; 
   name: string;
   birthDate: string; 
@@ -17,7 +17,6 @@ export interface Profile {
 export interface User {
   id: string;
   email: string;
-  name?: string;
-  // country could be a preference stored for the user
+  name?: string | null;
   countryPreference?: string; 
 }

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
-import { CalendarIcon, FileText, Landmark, BookOpen, Briefcase, MapPin, Church, Users, Image as ImageIconLucide, Upload } from 'lucide-react';
+import { CalendarIcon, FileText, Landmark, BookOpen, Briefcase, MapPin, Church, Users, Image as ImageIconLucide } from 'lucide-react';
 import { submitProfile } from '@/lib/actions';
 import type { Profile } from '@/lib/types';
 import { useAuth } from '@/contexts/auth-context';
@@ -22,6 +22,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
 import { Skeleton } from '../ui/skeleton';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 
 const profileFormSchema = z.object({
   id: z.string().optional(),
@@ -66,27 +68,41 @@ export default function ProfileForm() {
 
   useEffect(() => {
     const profileId = searchParams.get('edit');
-    if (profileId) {
+    if (profileId && user) {
       setIsEditMode(true);
       setIsLoadingForm(true);
-      const storedProfiles = localStorage.getItem('mygene-profiles');
-      if (storedProfiles) {
-        const profiles: Profile[] = JSON.parse(storedProfiles);
-        const profileToEdit = profiles.find(p => p.id === profileId);
-        if (profileToEdit) {
+      
+      const fetchProfileForEdit = async () => {
+        const docRef = doc(db, 'profiles', profileId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          const profileToEdit = docSnap.data() as Profile;
+          if (profileToEdit.submittedBy !== user.id) {
+            toast({ variant: 'destructive', title: 'Unauthorized', description: "You cannot edit this profile."});
+            router.push('/profiles');
+            return;
+          }
+
           form.reset({
             ...profileToEdit,
+            id: profileId,
             birthDate: new Date(profileToEdit.birthDate),
             deathDate: new Date(profileToEdit.deathDate),
           });
           if (profileToEdit.imageUrl) {
             setImagePreview(profileToEdit.imageUrl);
           }
+        } else {
+            toast({ variant: 'destructive', title: 'Not Found', description: "Profile not found."});
+            router.push('/profiles');
         }
+        setIsLoadingForm(false);
       }
+      fetchProfileForEdit();
+    } else {
+        setIsLoadingForm(false);
     }
-    setIsLoadingForm(false);
-  }, [searchParams, form]);
+  }, [searchParams, form, router, toast, user]);
 
 
   const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -130,26 +146,12 @@ export default function ProfileForm() {
     
     const result = await submitProfile(user.id, serverData);
 
-    if (result.success && result.profile) {
-      const profilesString = localStorage.getItem('mygene-profiles');
-      const profiles: Profile[] = profilesString ? JSON.parse(profilesString) : [];
-      
-      if (isEditMode) {
-        const index = profiles.findIndex(p => p.id === result.profile.id);
-        if (index !== -1) {
-          profiles[index] = result.profile;
-        }
-      } else {
-        profiles.push(result.profile);
-      }
-
-      localStorage.setItem('mygene-profiles', JSON.stringify(profiles));
-
+    if (result.success && result.profileId) {
       toast({
         title: isEditMode ? 'Profile Updated' : 'Profile Submitted',
-        description: `${result.profile.name}'s profile has been successfully ${isEditMode ? 'updated' : 'created'}.`,
+        description: `${data.name}'s profile has been successfully ${isEditMode ? 'updated' : 'created'}.`,
       });
-      router.push(`/profiles/${result.profile.id}`);
+      router.push(`/profiles/${result.profileId}`);
     } else {
       toast({
         title: 'Submission Failed',
@@ -213,7 +215,6 @@ export default function ProfileForm() {
                   <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
                 </div>
               )}
-              {/* This message will appear if schema validation for imageUrl (now Data URL) fails */}
               <FormMessage>{form.formState.errors.imageUrl?.message}</FormMessage> 
             </FormItem>
             
