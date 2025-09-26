@@ -4,13 +4,12 @@ import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
 const firebaseConfig = {
-  "projectId": "mygene-rgd71",
-  "appId": "1:404007391232:web:19610f018e1c1e7f6f88e5",
-  "storageBucket": "mygene-rgd71.firebasestorage.app",
-  "apiKey": "AIzaSyApiu3fL-osK1kMtgdwTmVNkSJPSGWvHOE",
-  "authDomain": "mygene-rgd71.firebaseapp.com",
-  "measurementId": "",
-  "messagingSenderId": "404007391232"
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
 // Initialize Firebase
