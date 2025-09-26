@@ -17,6 +17,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import React, { useState } from 'react';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 export default function Header() {
   const { user, logout, isLoading } = useAuth();
@@ -141,8 +142,8 @@ function UserMenu({ user, logout }: { user: NonNullable<ReturnType<typeof useAut
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full">
           <Avatar className="h-9 w-9">
-            <AvatarImage src={`https://placehold.co/100x100.png?text=${user.name?.[0] || 'U'}`} alt={user.name || 'User'} data-ai-hint="avatar person" />
-            <AvatarFallback>{user.name?.[0] || 'U'}</AvatarFallback>
+            <AvatarImage src={placeholderImages.avatar.url} alt={user.name || 'User'} data-ai-hint="avatar person" />
+            <AvatarFallback>{user.name?.[0]?.toUpperCase() || 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>

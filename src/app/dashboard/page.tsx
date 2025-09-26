@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { PlusSquare, Users, BarChart3, MapPin } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Profile } from '@/lib/types';
-import { collection, query, where, getDocs, count } from 'firebase/firestore';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 

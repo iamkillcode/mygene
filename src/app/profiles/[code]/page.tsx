@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { doc, getDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 export default function ProfileDetailPage() {
   const params = useParams();
@@ -160,7 +161,7 @@ export default function ProfileDetailPage() {
             <div className="md:col-span-1">
               <div className="relative w-full aspect-[3/4] rounded-lg overflow-hidden shadow-md bg-muted">
                  <Image
-                  src={profile.imageUrl || `https://placehold.co/300x400.png?text=${encodeURIComponent(profile.name.substring(0,1))}`}
+                  src={profile.imageUrl || placeholderImages.profile.url}
                   alt={profile.name}
                   layout="fill"
                   objectFit="cover"
@@ -191,7 +192,7 @@ export default function ProfileDetailPage() {
               {profile.occupation && (
                 <ProfileSection icon={<Briefcase className="text-accent"/>} title="Occupation">
                   <p className="whitespace-pre-wrap">{profile.occupation}</p>
-                </Section>
+                </ProfileSection>
               )}
             </div>
           </CardContent>

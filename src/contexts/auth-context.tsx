@@ -27,15 +27,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
+        const countryPreference = localStorage.getItem('mygene-country-preference');
         setFirebaseUser(currentUser);
         setUser({
           id: currentUser.uid,
           email: currentUser.email!,
           name: currentUser.displayName,
+          countryPreference: countryPreference || undefined,
         });
       } else {
         setFirebaseUser(null);
         setUser(null);
+        localStorage.removeItem('mygene-country-preference');
       }
       setIsLoading(false);
     });
@@ -45,8 +48,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   
   const login = (country?: string) => {
     if (country) {
+      localStorage.setItem('mygene-country-preference', country);
       router.push(`/${country.toLowerCase()}/dashboard`);
     } else {
+      localStorage.removeItem('mygene-country-preference');
       router.push('/dashboard');
     }
   };

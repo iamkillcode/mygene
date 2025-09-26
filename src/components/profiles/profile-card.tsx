@@ -1,3 +1,4 @@
+
 'use client';
 
 import type { Profile } from '@/lib/types';
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { CalendarDays, ArrowRight } from 'lucide-react';
 import { format } from 'date-fns';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 interface ProfileCardProps {
   profile: Profile;
@@ -21,7 +23,7 @@ export default function ProfileCard({ profile }: ProfileCardProps) {
       <CardHeader className="p-0">
         <div className="relative w-full h-48 bg-muted">
           <Image
-            src={profile.imageUrl || `https://placehold.co/400x300.png?text=${encodeURIComponent(profile.name.substring(0,1))}`}
+            src={profile.imageUrl || placeholderImages.profile.url}
             alt={profile.name}
             layout="fill"
             objectFit="cover"

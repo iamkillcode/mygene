@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Edit3, Lock, Globe, MessageSquareHeart } from 'lucide-react';
+import placeholderImages from '@/lib/placeholder-images.json';
 
 export default function HomePage() {
   return (
@@ -52,10 +53,10 @@ export default function HomePage() {
         <Card className="bg-primary/10 border-primary shadow-xl">
           <CardHeader className="items-center">
             <Image 
-              src="https://placehold.co/600x400.png" 
+              src={placeholderImages.familyTree.url} 
               alt="Family Tree" 
-              width={600} 
-              height={400} 
+              width={placeholderImages.familyTree.width} 
+              height={placeholderImages.familyTree.height} 
               className="rounded-lg shadow-md"
               data-ai-hint="family tree" 
             />
