@@ -162,9 +162,13 @@ export default function LoginForm() {
             </Button>
           </form>
         </Form>
-      </CardContent>
-      <CardFooter className="flex flex-col gap-4">
-        <p className="text-sm text-muted-foreground">
+      </CardContent>      <CardFooter className="flex flex-col gap-4">
+        <div className="text-center">
+          <Link href="/forgot-password" className="text-sm font-medium text-primary hover:underline">
+            Forgot your password?
+          </Link>
+        </div>
+        <p className="text-sm text-muted-foreground text-center">
           Don&apos;t have an account?{' '}
           <Link href="/signup" className="font-medium text-primary hover:underline">
             Sign up

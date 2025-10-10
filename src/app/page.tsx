@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Edit3, Lock, Globe, MessageSquareHeart } from 'lucide-react';
-import placeholderImages from '@/lib/placeholder-images.json';
 
 export default function HomePage() {
   return (
@@ -48,17 +47,16 @@ export default function HomePage() {
           </Card>
         ))}
       </section>
-      
-      <section className="w-full max-w-4xl py-12">
+        <section className="w-full max-w-4xl py-12">
         <Card className="bg-primary/10 border-primary shadow-xl">
           <CardHeader className="items-center">
             <Image 
-              src={placeholderImages.familyTree.url} 
-              alt="Family Tree" 
-              width={placeholderImages.familyTree.width} 
-              height={placeholderImages.familyTree.height} 
-              className="rounded-lg shadow-md"
-              data-ai-hint="family tree" 
+              src="/images/family-tree.jpg" 
+              alt="Family Tree - Connecting generations through digital legacy" 
+              width={600} 
+              height={400} 
+              className="rounded-lg shadow-md object-cover"
+              priority={false}
             />
             <CardTitle className="text-3xl font-headline text-primary pt-6">Discover Your Roots</CardTitle>
           </CardHeader>
